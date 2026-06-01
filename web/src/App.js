@@ -5,7 +5,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://shoplesotho-api.onrender.com/api';
 const socket = io('http://localhost:5000');
 
 function App() {
