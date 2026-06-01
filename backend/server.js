@@ -6,11 +6,27 @@ const socketIo = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
+
+// ========== CORS CONFIGURATION FOR PRODUCTION ==========
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://shoplesotho.vercel.app',
+    'https://shoplesotho-git-main-sebuticalvin-projects.vercel.app',
+    'https://shoplesotho-kapa9205b-sebuticalvins-projects.vercel.app'
+];
+
 const io = socketIo(server, {
-    cors: { origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE'] }
+    cors: {
+        origin: allowedOrigins,
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        credentials: true
+    }
 });
 
-app.use(cors({ origin: '*', credentials: true }));
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true
+}));
 app.use(express.json());
 
 // ========== DATABASE ==========
@@ -36,7 +52,7 @@ const authenticate = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Access denied' });
     try {
-        req.user = jwt.verify(token, 'your-secret-key');
+        req.user = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
         next();
     } catch (err) {
         res.status(401).json({ error: 'Invalid token' });
@@ -68,7 +84,7 @@ app.post('/api/login', async (req, res) => {
         user = { id: nextUserId++, email, role: email.includes('admin') ? 'admin' : 'user' };
         users.push(user);
     }
-    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, 'your-secret-key', { expiresIn: '24h' });
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: '24h' });
     res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
 });
 
@@ -135,7 +151,7 @@ app.delete('/api/cart/:productId', authenticate, (req, res) => {
     res.json({ message: 'Item removed from cart' });
 });
 
-// ========== CHECKOUT ENDPOINT - FIXED ==========
+// ========== CHECKOUT ENDPOINT ==========
 app.post('/api/checkout', authenticate, (req, res) => {
     const userId = req.user.userId;
     const userCart = carts[userId];
@@ -204,9 +220,13 @@ app.get('/api/admin/stats', authenticate, (req, res) => {
 });
 
 // ========== START SERVER ==========
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-    console.log(`✅ Backend running on http://localhost:${PORT}`);
+    console.log(`✅ Backend running on port ${PORT}`);
     console.log(`📦 Products: ${products.length}`);
     console.log(`🔌 WebSocket enabled`);
+    console.log(`🌐 CORS enabled for: ${allowedOrigins.join(', ')}`);
 });
+
+// Export for testing
+module.exports = { app, server };
