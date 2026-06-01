@@ -1,0 +1,5 @@
+Label,# Samples,Average,Median,90% Line,95% Line,99% Line,Min,Max,Error %,Throughput,Received KB/sec,Sent KB/sec
+TC-LOAD-003: POST Login,1000,3,3,6,7,9,1,13,100.000%,5.81058,1.82,1.16
+TC-LOAD-004: POST Add to Cart,500,3,3,6,7,9,1,17,100.000%,9.22441,2.83,1.84
+TC-LOAD-005: POST Checkout,500,3,3,6,7,9,1,11,100.000%,9.22356,2.83,1.87
+TOTAL,2000,3,3,6,7,9,1,17,100.000%,11.62115,3.60,2.33
