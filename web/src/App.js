@@ -6,7 +6,7 @@ import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 const API_URL = 'https://shoplesotho-api.onrender.com/api';
-const socket = io('http://localhost:5000');
+const socket = io('https://shoplesotho-api.onrender.com');
 
 function App() {
     // ========== STATE VARIABLES ==========
