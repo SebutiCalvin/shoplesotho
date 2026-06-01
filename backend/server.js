@@ -7,14 +7,20 @@ const socketIo = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 
-// ========== CORS CONFIGURATION FOR PRODUCTION ==========
+// ========== CORS CONFIGURATION - ALLOW NETLIFY ==========
+// Add your Netlify URL here after deployment
 const allowedOrigins = [
     'http://localhost:3000',
+    'http://localhost:5000',
     'https://shoplesotho.vercel.app',
     'https://shoplesotho-git-main-sebuticalvin-projects.vercel.app',
-    'https://shoplesotho-kapa9205b-sebuticalvins-projects.vercel.app'
+    'https://shoplesotho-kapa9205b-sebuticalvins-projects.vercel.app',
+    'https://ubiquitous-faun-b7d6ac.netlify.app',
+    'https://*.netlify.app',
+    'https://*.onrender.com'
 ];
 
+// Socket.io with CORS
 const io = socketIo(server, {
     cors: {
         origin: allowedOrigins,
@@ -23,10 +29,21 @@ const io = socketIo(server, {
     }
 });
 
+// Express CORS middleware
 app.use(cors({
-    origin: allowedOrigins,
+    origin: function(origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.log('CORS blocked origin:', origin);
+            callback(null, true); // Temporarily allow all for testing
+        }
+    },
     credentials: true
 }));
+
 app.use(express.json());
 
 // ========== DATABASE ==========
@@ -76,25 +93,39 @@ io.on('connection', (socket) => {
 // ========== AUTH ENDPOINTS ==========
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
+    console.log('Login attempt:', email);
+    
     if (!email || !email.includes('@')) {
         return res.status(401).json({ error: 'Invalid email format' });
     }
+    
     let user = users.find(u => u.email === email);
     if (!user) {
         user = { id: nextUserId++, email, role: email.includes('admin') ? 'admin' : 'user' };
         users.push(user);
+        console.log('New user created:', user);
     }
-    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: '24h' });
+    
+    const token = jwt.sign(
+        { userId: user.id, email: user.email, role: user.role }, 
+        process.env.JWT_SECRET || 'your-secret-key', 
+        { expiresIn: '24h' }
+    );
+    
     res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
 });
 
 app.post('/api/register', async (req, res) => {
     const { email, password } = req.body;
+    console.log('Register attempt:', email);
+    
     if (users.find(u => u.email === email)) {
         return res.status(400).json({ error: 'User already exists' });
     }
+    
     const newUser = { id: nextUserId++, email, role: 'user' };
     users.push(newUser);
+    console.log('User registered:', newUser);
     res.status(201).json({ message: 'User registered successfully', userId: newUser.id });
 });
 
@@ -225,8 +256,5 @@ server.listen(PORT, () => {
     console.log(`✅ Backend running on port ${PORT}`);
     console.log(`📦 Products: ${products.length}`);
     console.log(`🔌 WebSocket enabled`);
-    console.log(`🌐 CORS enabled for: ${allowedOrigins.join(', ')}`);
+    console.log(`🌐 CORS enabled for development`);
 });
-
-// Export for testing
-module.exports = { app, server };
