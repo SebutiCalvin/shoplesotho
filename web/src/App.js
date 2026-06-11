@@ -5,8 +5,10 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
-const API_URL = 'https://shoplesotho.onrender.com/api';
-const socket = io('https://shoplesotho.onrender.com');
+
+const BACKEND_URL = 'https://shoplesotho-api.onrender.com';
+const API_URL = `${BACKEND_URL}/api`;
+const socket = io(BACKEND_URL);
 
 function App() {
     // ========== STATE VARIABLES ==========
@@ -59,7 +61,10 @@ function App() {
         try {
             const response = await axios.get(`${API_URL}/products`);
             setProducts(response.data.products || []);
-        } catch (error) { console.error(error); }
+        } catch (error) { 
+            console.error('Fetch products error:', error);
+            showToast('Failed to load products');
+        }
         finally { setLoading(false); }
     };
 
@@ -67,36 +72,52 @@ function App() {
         try {
             const response = await axios.get(`${API_URL}/categories`);
             setCategories(response.data);
-        } catch (error) { console.error(error); }
+        } catch (error) { 
+            console.error('Fetch categories error:', error);
+        }
     };
 
     const fetchCart = async () => {
+        if (!token) return;
         try {
             const response = await axios.get(`${API_URL}/cart`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setCart(response.data);
-        } catch (error) { console.error(error); }
+        } catch (error) { 
+            console.error('Fetch cart error:', error);
+        }
     };
 
     const fetchOrders = async () => {
+        if (!token) return;
         try {
             const response = await axios.get(`${API_URL}/orders`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setOrders(response.data);
-        } catch (error) { console.error(error); }
+        } catch (error) { 
+            console.error('Fetch orders error:', error);
+        }
     };
 
     // ========== CART FUNCTIONS ==========
     const addToCart = async (productId) => {
+        if (!token) {
+            showToast('Please login first');
+            setCurrentPage('login');
+            return;
+        }
         try {
             await axios.post(`${API_URL}/cart`, { productId, quantity: 1 }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             await fetchCart();
             showToast('🛒 Added to cart!');
-        } catch (error) { showToast('Failed to add'); }
+        } catch (error) { 
+            console.error('Add to cart error:', error);
+            showToast('Failed to add'); 
+        }
     };
 
     const removeFromCart = async (productId) => {
@@ -106,7 +127,10 @@ function App() {
             });
             await fetchCart();
             showToast('Removed from cart');
-        } catch (error) { showToast('Failed to remove'); }
+        } catch (error) { 
+            console.error('Remove from cart error:', error);
+            showToast('Failed to remove'); 
+        }
     };
 
     const updateQuantity = async (productId, newQuantity) => {
@@ -116,10 +140,12 @@ function App() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             await fetchCart();
-        } catch (error) { console.error(error); }
+        } catch (error) { 
+            console.error('Update quantity error:', error);
+        }
     };
 
-    // ✅ SIMPLE WORKING CHECKOUT ✅
+    // ✅ FIXED CHECKOUT FUNCTION ✅
     const handleCheckout = async () => {
         console.log('===== CHECKOUT BUTTON CLICKED =====');
         console.log('Cart items:', cart.length);
@@ -141,7 +167,7 @@ function App() {
         setLoading(true);
         
         try {
-            console.log('Sending checkout request...');
+            console.log('Sending checkout request to:', `${API_URL}/checkout`);
             const response = await axios.post(`${API_URL}/checkout`, {}, {
                 headers: { 
                     'Authorization': `Bearer ${currentToken}`,
@@ -183,22 +209,80 @@ function App() {
     const getCartTotal = () => cart.reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0);
     const getDiscountedTotal = () => getCartTotal() - (getCartTotal() * discount / 100);
 
+    // ✅ FIXED LOGIN FUNCTION WITH DEBUGGING ✅
     const handleLogin = async () => {
+        console.log('===== LOGIN BUTTON CLICKED =====');
+        console.log('Email:', email);
+        console.log('API_URL:', API_URL);
+        
+        if (!email || !password) {
+            alert('Please enter email and password');
+            return;
+        }
+        
         setLoading(true);
         try {
+            console.log('Sending login request to:', `${API_URL}/login`);
             const response = await axios.post(`${API_URL}/login`, { email, password });
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-            setToken(response.data.token);
-            setUser(response.data.user);
-            setCurrentPage('products');
-            fetchProducts();
-            fetchCategories();
-            fetchCart();
-            fetchOrders();
-            showToast(`Welcome!`);
-        } catch (error) { showToast('Login failed'); }
-        finally { setLoading(false); }
+            console.log('Login response:', response.data);
+            
+            if (response.data && response.data.token) {
+                localStorage.setItem('token', response.data.token);
+                localStorage.setItem('user', JSON.stringify(response.data.user));
+                setToken(response.data.token);
+                setUser(response.data.user);
+                setCurrentPage('products');
+                fetchProducts();
+                fetchCategories();
+                fetchCart();
+                fetchOrders();
+                showToast(`Welcome ${response.data.user.email}!`);
+                console.log('Login successful!');
+            } else {
+                alert('Login failed: No token received');
+            }
+        } catch (error) {
+            console.error('Login error DETAILS:', error);
+            console.error('Error response:', error.response?.data);
+            console.error('Error status:', error.response?.status);
+            const errorMsg = error.response?.data?.error || error.message || 'Login failed';
+            alert(`Login failed: ${errorMsg}`);
+            showToast('Login failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ✅ FIXED REGISTER FUNCTION ✅
+    const handleRegister = async () => {
+        console.log('===== REGISTER BUTTON CLICKED =====');
+        console.log('Email:', email);
+        
+        if (!email || !password) {
+            alert('Please enter email and password');
+            return;
+        }
+        
+        setLoading(true);
+        try {
+            const response = await axios.post(`${API_URL}/register`, { email, password });
+            console.log('Register response:', response.data);
+            
+            if (response.data && response.data.message) {
+                alert('Registration successful! Please login.');
+                setIsRegister(false);
+                setEmail('');
+                setPassword('');
+            } else {
+                alert('Registration failed');
+            }
+        } catch (error) {
+            console.error('Register error:', error);
+            const errorMsg = error.response?.data?.error || error.message || 'Registration failed';
+            alert(`Registration failed: ${errorMsg}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const logout = () => {
@@ -207,6 +291,7 @@ function App() {
         setUser(null);
         setCurrentPage('login');
         setCart([]);
+        setOrders([]);
         showToast('Logged out');
     };
 
@@ -236,13 +321,37 @@ function App() {
                     <h1 style={{ fontSize: '48px' }}>🇱🇸</h1>
                     <h1>ShopLesotho</h1>
                     <h2>{isRegister ? 'Register' : 'Login'}</h2>
-                    <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={styles.input} />
-                    <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={styles.input} />
-                    <button onClick={handleLogin} style={styles.button}>{isRegister ? 'Register' : 'Login'}</button>
-                    <button onClick={() => setIsRegister(!isRegister)} style={styles.linkButton}>
+                    <input 
+                        type="email" 
+                        placeholder="Email" 
+                        value={email} 
+                        onChange={(e) => setEmail(e.target.value)} 
+                        style={styles.input} 
+                    />
+                    <input 
+                        type="password" 
+                        placeholder="Password" 
+                        value={password} 
+                        onChange={(e) => setPassword(e.target.value)} 
+                        style={styles.input} 
+                    />
+                    <button 
+                        onClick={isRegister ? handleRegister : handleLogin} 
+                        disabled={loading} 
+                        style={styles.button}
+                    >
+                        {loading ? 'Loading...' : (isRegister ? 'Register' : 'Login')}
+                    </button>
+                    <button 
+                        onClick={() => setIsRegister(!isRegister)} 
+                        style={styles.linkButton}
+                    >
                         {isRegister ? 'Back to Login' : 'Create Account'}
                     </button>
-                    <p style={{ fontSize: '12px', marginTop: '20px' }}>Demo: admin@test.com (any password)</p>
+                    <p style={{ fontSize: '12px', marginTop: '20px' }}>
+                        Demo: admin@test.com (any password)
+                    </p>
+                    {toastMessage && <p style={{ color: 'red', marginTop: '10px' }}>{toastMessage}</p>}
                 </div>
             </div>
         );
@@ -251,7 +360,7 @@ function App() {
     // ========== STYLES ==========
     const currentStyles = darkMode ? stylesDark : stylesLight;
 
-    // ✅ SIMPLE MODAL WITH DIRECT BUTTON ✅
+    // ✅ CONFIRMATION MODAL ✅
     const ConfirmationModal = () => (
         <div style={styles.modalOverlay}>
             <div style={styles.modal}>
@@ -310,7 +419,13 @@ function App() {
                     <div>
                         <h1>Welcome To Shop Lesotho! 🇱🇸</h1>
                         <div style={{ display: 'flex', gap: '10px', margin: '20px 0' }}>
-                            <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ flex: 1, padding: '10px' }} />
+                            <input 
+                                type="text" 
+                                placeholder="Search..." 
+                                value={search} 
+                                onChange={(e) => setSearch(e.target.value)} 
+                                style={{ flex: 1, padding: '10px' }} 
+                            />
                             <button onClick={() => fetchProducts()}>Search</button>
                         </div>
 

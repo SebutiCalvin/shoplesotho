@@ -3,16 +3,24 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="E-Commerce System for Datamak Technologies - Computers, ICT Products, and Web Hosting Services" />
+    <meta name="theme-color" content="#1e3c72" />
+    <meta name="description" content="ShopLesotho - Premium E-Commerce Platform for Computers, ICT Products, and Web Hosting Services in Lesotho" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ShopLesotho" />
     
-    <title>E-Commerce Store | Datamak Technologies</title>
+    <title>ShopLesotho | Premium E-Commerce Platform</title>
     
-    <!-- Favicon -->
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Icons -->
+    <link rel="apple-touch-icon" href="/icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512x512.png" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>" />
     
     <style>
-        /* Global styles for initial loading screen */
         * {
             margin: 0;
             padding: 0;
@@ -21,11 +29,10 @@
         
         body {
             font-family: 'Arial', 'Arial Narrow', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             min-height: 100vh;
         }
         
-        /* Loading spinner */
         .loading-container {
             display: flex;
             justify-content: center;
@@ -55,7 +62,6 @@
             letter-spacing: 2px;
         }
         
-        /* Error message styles */
         .error-message {
             background: rgba(255, 0, 0, 0.9);
             color: white;
@@ -74,17 +80,15 @@
 </head>
 <body>
     <div id="root">
-        <!-- Initial loading state - will be replaced by React -->
         <div class="loading-container">
             <div class="spinner"></div>
-            <div class="loading-text">Loading E-Commerce System...</div>
+            <div class="loading-text">Loading ShopLesotho...</div>
             <div style="margin-top: 20px; font-size: 14px; opacity: 0.8;">
                 Datamak Technologies
             </div>
         </div>
     </div>
     
-    <!-- Global error display -->
     <div id="global-error" class="error-message"></div>
     
     <script>
@@ -100,20 +104,18 @@
             }
         });
         
-        // Check if backend is available on load
-        fetch('http://localhost:5000/api/products')
-            .then(response => response.json())
-            .then(data => {
-                console.log('✅ Backend connected! Products found:', data.products?.length || 0);
-            })
-            .catch(error => {
-                console.warn('⚠️ Backend not reachable. Make sure backend is running on port 5000');
-                const errorDiv = document.getElementById('global-error');
-                if (errorDiv) {
-                    errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = '⚠️ Backend not connected! Please start the backend server on port 5000.';
-                }
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registered successfully:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Service Worker registration failed:', error);
+                    });
             });
+        }
     </script>
 </body>
 </html>

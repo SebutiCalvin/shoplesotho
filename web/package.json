@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^7.6.6",
+    "@capacitor/core": "^8.4.0",
     "axios": "^1.6.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",

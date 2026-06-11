@@ -1,4 +1,4 @@
-node_modules/
+﻿node_modules/
 .env
 .DS_Store
 dist/
@@ -7,4 +7,7 @@ build/
 coverage/
 .vscode/
 *.apk
-*.ipa
+*.msi
+*.exe
+android/
+.vercel/
