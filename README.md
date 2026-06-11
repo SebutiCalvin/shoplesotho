@@ -25,7 +25,7 @@ See [installation guide](docs/installation-guide.md)
 ## Team Members
 - Backend: [Sebuti Mofokeng]
 - Web Frontend: [Sebuti Mofokeng]
-- Mobile App: [Name]
-- Testing Lead: [Name]
+- Mobile App: [57266136]
+
 
 ## Grade Achieved: PASS
